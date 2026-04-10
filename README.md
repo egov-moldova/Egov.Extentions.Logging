@@ -1,4 +1,4 @@
-﻿# <img src="files/MLog.png" alt="Icon" width="48" height="48" vertical-align="middle"> Egov.Extensions.Logging
+﻿# Egov.Extensions.Logging
 
 [![NuGet Version](https://img.shields.io/nuget/v/Egov.Extensions.Logging.svg)](https://www.nuget.org/packages/Egov.Extensions.Logging)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

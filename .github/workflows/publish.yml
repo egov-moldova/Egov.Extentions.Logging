@@ -2,7 +2,6 @@
 
 on:
   workflow_dispatch:
-
 env:
   DOTNET_VERSION: '10.0.x'
   SOLUTION_PATH: 'src/Egov.Extensions.Logging.sln'
@@ -47,8 +46,40 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Set Version and Update Projects (Local Only)
+        id: versioning
+        shell: pwsh
+        run: |
+          # Use run_number to create version 10.0.X
+          $version = "10.0.${{ github.run_number }}"
+          echo "NEW_VERSION=$version" >> $env:GITHUB_OUTPUT
+          
+          $projects = Get-ChildItem -Recurse -Filter *.csproj -Path src
+          foreach ($projectFile in $projects) {
+              [xml]$csproj = Get-Content $projectFile.FullName
+              
+              # Find the first PropertyGroup
+              $pg = $csproj.Project.PropertyGroup | Select-Object -First 1
+              
+              if ($null -eq $pg) {
+                  $pg = $csproj.CreateElement("PropertyGroup")
+                  $csproj.Project.AppendChild($pg)
+              }
+
+              if ($null -ne $pg.Version) {
+                  $pg.Version = $version
+              } else {
+                  $vNode = $csproj.CreateElement("Version")
+                  $vNode.InnerText = $version
+                  $pg.AppendChild($vNode)
+              }
+              
+              $csproj.Save($projectFile.FullName)
+              Write-Host "Updated version to $version in $($projectFile.FullName) (locally only)"
+          }
+
       - name: Pack
-        run: dotnet pack ${{ env.SOLUTION_PATH }} --configuration Release --output ./nupkg
+        run: dotnet pack ${{ env.SOLUTION_PATH }} --configuration Release --output ./nupkg /p:Version=${{ steps.versioning.outputs.NEW_VERSION }}
 
       - name: Push to NuGet.org
         run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
