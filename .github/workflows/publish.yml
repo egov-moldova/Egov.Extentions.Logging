@@ -1,0 +1,59 @@
+﻿name: .NET Build & Publish
+
+on:
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  SOLUTION_PATH: 'src/Egov.Extensions.Logging.sln'
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity normal
+
+  publish:
+    name: Publish NuGet
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Pack
+        run: dotnet pack ${{ env.SOLUTION_PATH }} --configuration Release --output ./nupkg
+
+      - name: Push to NuGet.org
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Push to GitHub Packages
+        run: |
+          dotnet nuget add source --username ${{ github.actor }} --password ${{ github.token }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          dotnet nuget push ./nupkg/*.nupkg --api-key ${{ github.token }} --source github --skip-duplicate

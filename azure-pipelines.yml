@@ -1,0 +1,73 @@
+name: '10.0$(Rev:.r)'
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+stages:
+- stage: Build
+  displayName: Build NuGet packages
+  jobs:
+  - job: BuildPackage
+    displayName: Build NuGet packages
+    pool:
+      name: Azure Pipelines
+      vmImage: ubuntu-latest
+    workspace:
+      clean: all
+    variables:
+      solutionPath: src
+      buildConfiguration: Release
+      loggingProjectPath: src/Age.Extensions.Logging/Age.Extensions.Logging.csproj
+      consoleProjectPath: src/Age.Extensions.Logging.Console/Age.Extensions.Logging.Console.csproj
+    steps:
+    - task: UseDotNet@2
+      displayName: Use .NET Core SDK
+      inputs:
+        version: 10.0.x
+    - task: VersionDotNetCoreAssemblies@3
+      displayName: Version Projects
+      inputs:
+        Path: '$(solutionPath)'
+        VersionNumber: '$(Build.BuildNumber).0'
+        AddDefault: true
+    - task: DotNetCoreCLI@2
+      displayName: Restore NuGet
+      inputs:
+        command: 'restore'
+        verbosityRestore: Minimal
+        projects: '**/*.csproj'
+    - script: dotnet build $(solutionPath) --no-restore --configuration $(buildConfiguration)
+      displayName: Build Solution
+    - script: dotnet pack $(loggingProjectPath) --no-build --include-symbols --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+      displayName: Pack Logging NuGet
+    - script: dotnet pack $(consoleProjectPath) --no-build --include-symbols --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+      displayName: Pack Console Logging NuGet
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: packages
+
+- stage: Publish
+  displayName: Publish to Azure Artifacts
+  dependsOn: Build
+  jobs:
+  - deployment: AzureArtifacts
+    displayName: Azure Artifacts
+    pool:
+      name: Azure Pipelines
+      vmImage: ubuntu-latest
+    environment: Azure Artifacts
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: UseDotNet@2
+            displayName: Use .NET Core SDK
+            inputs:
+              version: 10.0.x
+          - task: DotNetCoreCLI@2
+            displayName: Push NuGet
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Pipeline.Workspace)/packages/*.nupkg;!$(Pipeline.Workspace)/packages/*.symbols.nupkg'
+              publishVstsFeed: '7638c1b5-7842-4073-8e64-8d0f5e11f2a7'

@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Egov.Extensions.Logging</PackageId>
+    <Version>10.0.0</Version>
+    <Authors>egov.md</Authors>
+    <Company>Egov.md</Company>
+    <Description>Provides structured logging helpers, such as the LoggerEvent class, for easy integration with structured logging backends like Elastic.</Description>
+    <PackageTags>egov;logging;structured;elastic</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/egov-moldova/Egov.Extentions.Logging</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\files\MLog.png" Pack="true" PackagePath="\icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>
